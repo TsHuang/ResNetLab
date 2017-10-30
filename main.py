@@ -25,10 +25,10 @@ from utils import progress_bar
 from torch.autograd import Variable
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument("checkpt", '-c', help="Path to save the checkpoints to")
+parser.add_argument('--checkpt', '-c', help="Path to save the checkpoints to")
 #parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
-parser.add_argument('--model', '-m', action='store_true', default=0, type=int, help='0:ResNet, 1:VanillaNet, 2:Bonus')
-parser.add_argument('--layers', '-l', action='store_true', default=20, type=int, help='support only 20, 56, 110 layers')
+parser.add_argument('--model', '-m', default=0, type=int, help='0:ResNet, 1:VanillaNet, 2:Bonus')
+parser.add_argument('--layers', '-l', default=20, type=int, help='support only 20, 56, 110 layers')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 
 args = parser.parse_args()
@@ -40,12 +40,19 @@ report = np.array(['FinalTestAcc', 'TrainLossCurve', 'TrainErrCurve', 'TestErrCu
 
 #create folders
 checkpoint_dir = args.checkpt
-best_dir = join(args.checkpt, "best")
-resume_dir = join(args.checkpt, "resume")
+best_dir = checkpoint_dir + "/best"
+resume_dir = checkpoint_dir + "/resume"
+
 if not exists(checkpoint_dir):
     print("checkpoint directories not found, creating directories...")
     makedirs(checkpoint_dir)
 
+if not exists(best_dir):
+    print('best_dir=', best_dir)
+    makedirs(best_dir)
+
+if not exists(resume_dir):
+    makedirs(resume_dir)
 
 # Data
 print('==> Preparing data..')
@@ -53,14 +60,14 @@ transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    # transforms.Normalize((0.4914, 0.4824, 0.4467), (0.2470, 0.2435, 0.2616)), #somehow this modification does not as good as the original one
+    #transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    transforms.Normalize((0.4914, 0.4824, 0.4467), (0.2470, 0.2435, 0.2616)), #somehow this modification does not as good as the original one
 ])
 
 transform_test = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    # transforms.Normalize((0.4914, 0.4824, 0.4467), (0.2470, 0.2435, 0.2616)),
+    #transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+    transforms.Normalize((0.4914, 0.4824, 0.4467), (0.2470, 0.2435, 0.2616)),
 ])
 
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
@@ -75,8 +82,11 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 if args.resume:
     # Load checkpoint.
     print('==> Resuming from checkpoint..')
-    assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/ResNet20/ResNet_118.t7')
+    #assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+    assert os.path.isdir(resume_dir), 'Error: no resume directory found!'
+    resume_file = join(resume_dir, "/resume.t7")
+    #checkpoint = torch.load('./checkpoint/ResNet20/ResNet_118.t7')
+    checkpoint = torch.load(resume_file)
     net = checkpoint['net']
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
@@ -183,7 +193,7 @@ def test(epoch):
     acc = 100. * correct / total
 
     print('Saving..')
-    savefilename = './checkpoint/ResNet110/ResNet_' + str(epoch) + '.t7'
+    savefilename = checkpoint_dir + '/ResNet_' + str(epoch) + '.t7'
     state = {
         'net': net.module if use_cuda else net,
         'acc': acc,
@@ -196,7 +206,9 @@ def test(epoch):
     print('Loss: %.3f, Accuracy: %.3f' % (test_loss / (batch_idx + 1), acc))
     if acc > best_acc:
         print('Saving..')
-        savefilename = './checkpoint/ResNet110/best/ResNet_' + str(epoch) + '.t7'
+        #savefilename = './checkpoint/ResNet110/best/ResNet_' + str(epoch) + '.t7'
+        savefilename = best_dir + '/ResNet_' + str(epoch) + '.t7'
+
         state = {
             'net': net.module if use_cuda else net,
             'acc': acc,
@@ -222,5 +234,7 @@ for epoch in range(start_epoch, start_epoch + 164):
     report = np.vstack((report, newdata))
     # report = ['FinalTestErr', 'TrainLossCurve', 'TestErrCurve']
 
-# save data
-np.savetxt("./checkpoint/ResNet110/report.csv", report, fmt="%s", delimiter=",")
+# save curve data
+curve_file = checkpoint_dir + '/curveData.csv'
+np.savetxt(curve_file, report, fmt="%s", delimiter=",")
+#np.savetxt("./checkpoint/ResNet110/report.csv", report, fmt="%s", delimiter=",")
