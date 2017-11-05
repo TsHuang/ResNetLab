@@ -27,7 +27,7 @@ from torch.autograd import Variable
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--checkpt', '-c', help="Path to save the checkpoints to")
 #parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
-parser.add_argument('--model', '-m', default=0, type=int, help='0:ResNet, 1:VanillaNet, 2:Bonus')
+parser.add_argument('--model', '-m', default=0, type=int, help='0:ResNet, 1:VanillaNet, 2:PreActiveResNet')
 parser.add_argument('--layers', '-l', default=20, type=int, help='support only 20, 56, 110 layers')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 
@@ -112,6 +112,16 @@ else:
         elif args.layers == 110:
             net = VanillaNet110()
             print('net = VanillaNet110')
+    elif args.model == 2: #PreActiveResNet
+        if args.layers == 20:
+            net = ResNetPreActive20()
+            print('net = PreActiveResNet20')
+        elif args.layers == 56:
+            net = ResNetPreActive56()
+            print('net = PreActiveResNet56')
+        elif args.layers == 110:
+            net = ResNetPreActive110()
+            print('net = PreActiveResNet110')
 
 
 if use_cuda:
