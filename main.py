@@ -125,9 +125,9 @@ optimizer = optim.SGD(net.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
 
 # learning rate scheduling
 def adjust_learning_rate(optimizer, epoch):
-    if epoch < 10:
+    if epoch < 81:
         lr = 0.1
-    elif epoch < 81:
+    elif epoch < 122:
         lr = 0.01
     else:
         lr = 0.001

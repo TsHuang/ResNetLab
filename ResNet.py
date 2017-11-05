@@ -14,10 +14,10 @@ class BasicBlock(nn.Module):
     def __init__(self, in_planes, planes, stride=1):
         super(BasicBlock, self).__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        init.kaiming_normal(self.conv1.weight)
+        #init.kaiming_normal(self.conv1.weight)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
-        init.kaiming_normal(self.conv2.weight)
+        #init.kaiming_normal(self.conv2.weight)
         self.bn2 = nn.BatchNorm2d(planes)
 
         self.shortcut = nn.Sequential()
@@ -39,12 +39,12 @@ class BasicBlockVanilla(nn.Module):
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
-        super(BasicBlock, self).__init__()
+        super(BasicBlockVanilla, self).__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        init.kaiming_normal(self.conv1.weight)
+        #init.kaiming_normal(self.conv1.weight)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
-        init.kaiming_normal(self.conv2.weight)
+        #init.kaiming_normal(self.conv2.weight)
         self.bn2 = nn.BatchNorm2d(planes)
 
     def forward(self, x):
@@ -126,6 +126,7 @@ class ResNetTs(nn.Module):
         self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
         self.linear = nn.Linear(64*block.expansion, num_classes)
+        self.reset_params()
         #self.linear = nn.Linear(64, num_classes) # not sure about this line
         #print(block.expansion)
 
@@ -146,6 +147,20 @@ class ResNetTs(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
+
+    def reset_params(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                init.kaiming_normal(m.weight, mode = 'fan_out')
+                if m.bias is not None:
+                    init.constant(m.bias, 0)
+                elif isinstance(m, nn.BatchNorm2d):
+                    init.constant(m.weight, 1)
+                    init.constant(m.bias, 0)
+                elif isinstance(m, nn.Linear):
+                    init.normal(m.weight, std=0.001)
+                    if m.bias is not None:
+                        init.constant(m.bias, 0)
 
 class VanillaNetTs(nn.Module):
     def __init__(self, block, num_blocks, num_classes=10):
@@ -179,6 +194,20 @@ class VanillaNetTs(nn.Module):
         out = self.linear(out)
         return out
 
+    def reset_params(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                init.kaiming_normal(m.weight, mode='fan_out')
+                if m.bias is not None:
+                    init.constant(m.bias, 0)
+                elif isinstance(m, nn.BatchNorm2d):
+                    init.constant(m.weight, 1)
+                    init.constant(m.bias, 0)
+                elif isinstance(m, nn.Linear):
+                    init.normal(m.weight, std=0.001)
+                    if m.bias is not None:
+                        init.constant(m.bias, 0)
+
 
 def ResNet20():
     return ResNetTs(BasicBlock, [3,3,3])
@@ -190,13 +219,13 @@ def ResNet110():
     return ResNetTs(BasicBlock, [16,16,16])
 
 def VanillaNet20():
-    return VanillaNetTs(BasicBlock, [3,3,3])
+    return VanillaNetTs(BasicBlockVanilla, [3,3,3])
 
 def VanillaNet56():
-    return VanillaNetTs(BasicBlock, [9,9,9])
+    return VanillaNetTs(BasicBlockVanilla, [9,9,9])
 
 def VanillaNet110():
-    return VanillaNetTs(BasicBlock, [16,16,16])
+    return VanillaNetTs(BasicBlockVanilla, [16,16,16])
 
 def test():
     net = ResNet20()
